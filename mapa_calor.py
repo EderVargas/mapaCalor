@@ -10,9 +10,32 @@ from pathlib import Path
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.ticker import StrMethodFormatter
 
 FORMATOS_ARCHIVO = ("png", "pdf", "svg", "jpg", "pkl")
 FORMATOS = FORMATOS_ARCHIVO + ("show",)
+
+NOMBRE_PALETA_DEFAULT = "beige_vino"
+COLORES = [
+    "#F3E6C8",  # Beige muy claro
+    "#E8D3A8",  # Beige
+    "#D7B77A",  # Beige dorado
+    "#B98A58",  # Camel / arena
+    "#B38E5D",  # Marrón rojizo
+    "#6E3038",  # Vino medio
+    "#5A1F2A",  # Vino
+    "#9D2449",  # Borgoña profundo
+    "#48131F",  # Vino oscuro
+]
+_CMAP_DEFAULT = LinearSegmentedColormap.from_list(NOMBRE_PALETA_DEFAULT, COLORES)
+
+
+def _resolver_paleta(paleta: str):
+    """Devuelve el colormap custom o un nombre de Matplotlib/Seaborn."""
+    if not paleta or paleta.lower() in (NOMBRE_PALETA_DEFAULT, "default"):
+        return _CMAP_DEFAULT
+    return paleta
 
 
 def _esta_vacio(valor) -> bool:
@@ -192,6 +215,21 @@ def _ruta_con_formato(ruta_salida: str, formato: str) -> Path:
     return ruta.with_suffix(sufijo)
 
 
+def _fondo_transparente(fig, ax) -> None:
+    """Quita el fondo blanco de figura, ejes y barra de color."""
+    fig.patch.set_facecolor("none")
+    fig.patch.set_alpha(0)
+    ax.set_facecolor("none")
+    ax.patch.set_alpha(0)
+    if not ax.collections:
+        return
+    cbar = ax.collections[0].colorbar
+    if cbar is None:
+        return
+    cbar.ax.set_facecolor("none")
+    cbar.ax.patch.set_alpha(0)
+
+
 def _guardar_figura(fig, ruta: Path, formato: str) -> None:
     ruta.parent.mkdir(parents=True, exist_ok=True)
     if formato == "pkl":
@@ -200,9 +238,20 @@ def _guardar_figura(fig, ruta: Path, formato: str) -> None:
         print(f"Figura interactiva guardada en: {ruta}")
         print(f"  Abrir: python mapa_calor.py --mostrar {ruta}")
         return
-    kwargs = {"dpi": 150, "bbox_inches": "tight", "pad_inches": 0.25}
+    kwargs = {
+        "dpi": 150,
+        "bbox_inches": "tight",
+        "pad_inches": 0.25,
+        "transparent": True,
+        "facecolor": "none",
+        "edgecolor": "none",
+    }
     if formato == "jpg":
+        # JPEG no soporta canal alpha: se aplana sobre blanco.
         kwargs["format"] = "jpeg"
+        kwargs["transparent"] = False
+        kwargs["facecolor"] = "white"
+        kwargs["edgecolor"] = "white"
     fig.savefig(ruta, **kwargs)
     print(f"Gráfico guardado en: {ruta}")
 
@@ -226,7 +275,7 @@ def mostrar_figura(ruta_pkl: str) -> None:
 def generar_mapa_calor(
     df: pd.DataFrame,
     titulo: str = "Mapa de Calor",
-    paleta: str = "YlOrRd",
+    paleta: str = NOMBRE_PALETA_DEFAULT,
     mostrar_anotaciones: bool = True,
     decimales: int = 0,
     ruta_salida: str = None,
@@ -239,7 +288,7 @@ def generar_mapa_calor(
     ----------
     df               : DataFrame con los datos (índice=filas, columnas=columnas del mapa).
     titulo           : Título del gráfico.
-    paleta           : Paleta de colores de Seaborn / Matplotlib.
+    paleta           : Paleta de colores. Por defecto beige_vino (custom).
     mostrar_anotaciones : Si True, muestra los valores numéricos en cada celda.
     decimales        : Número de decimales a mostrar en las anotaciones (por defecto 0).
     ruta_salida      : Si se indica, guarda el gráfico en esa ruta en lugar de mostrarlo.
@@ -268,19 +317,23 @@ def generar_mapa_calor(
 
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 
-    fmt_str = f".{decimales}f" if mostrar_anotaciones else ""
+    fmt_str = f",.{decimales}f" if mostrar_anotaciones else ""
 
     sns.heatmap(
         df_numerico,
         annot=mostrar_anotaciones,
         fmt=fmt_str,
-        cmap=paleta,
+        cmap=_resolver_paleta(paleta),
         linewidths=0.5,
         linecolor="white",
         annot_kws={"size": fuentes["annot"], "weight": "medium"},
         cbar_kws={"label": "Valor", "shrink": 0.65},
         ax=ax,
     )
+    cbar = ax.collections[0].colorbar
+    if cbar is not None:
+        cbar.formatter = StrMethodFormatter(f"{{x:,.{decimales}f}}")
+        cbar.update_ticks()
 
     titulo_visible = "\n".join(textwrap.wrap(titulo, width=56)) or titulo
     ax.set_title(titulo_visible, fontsize=fuentes["titulo"], fontweight="bold", pad=14)
@@ -324,6 +377,7 @@ def generar_mapa_calor(
     ax.tick_params(axis="both", length=0, pad=4)
 
     fig.tight_layout()
+    _fondo_transparente(fig, ax)
 
     formato_final = _normalizar_formato(formato, ruta_salida)
     if formato_final == "show":
@@ -360,17 +414,17 @@ def main():
     )
     parser.add_argument(
         "--paleta",
-        default="YlOrRd",
+        default=NOMBRE_PALETA_DEFAULT,
         help=(
-            "Paleta de colores. Ejemplos: YlOrRd, Blues, viridis, coolwarm, "
-            "RdYlGn, magma. (por defecto: YlOrRd)"
+            "Paleta de colores. Por defecto: beige_vino (beige a vino). "
+            "Otras: YlOrRd, Blues, viridis, coolwarm, RdYlGn, magma."
         ),
     )
     parser.add_argument(
         "--decimales",
         type=int,
         default=0,
-        help="Número de decimales en las anotaciones (por defecto: 0).",
+        help="Decimales en anotaciones. Miles y millones con coma (1,234,567).",
     )
     parser.add_argument(
         "--sin-anotaciones",

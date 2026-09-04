@@ -62,7 +62,6 @@ for ($i = 1; $i -le 14; $i++) {
         $script, $excel,
         "--hoja", $hoja,
         "--titulo", $titulo,
-        "--paleta", "YlOrRd",
         "--decimales", $decimales,
         "--formato", $Formato
     )

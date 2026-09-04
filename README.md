@@ -93,7 +93,8 @@ usage: mapa_calor.py [-h] [--hoja HOJA] [--titulo TITULO] [--paleta PALETA]
 | `excel`            | posicional | `input/datos_prueba.xlsx`                    | Ruta al archivo Excel a leer.                                            |
 | `--hoja HOJA`      | opcional   | Primera hoja del libro                       | Nombre de la hoja a leer.                                                |
 | `--titulo TITULO`  | opcional   | `"Sin Título"` | Título que aparece en la parte superior del gráfico.                     |
-| `--paleta PALETA`  | opcional   | `YlOrRd`                                    | Paleta de colores (ver tabla de paletas más abajo).                      |
+| `--paleta PALETA`  | opcional   | `beige_vino`                                | Paleta de colores (ver tabla de paletas más abajo).                      |
+| `--decimales N`    | opcional   | `0`                                         | Decimales en celdas. Miles y millones con coma (`1,234,567`).            |
 | `--sin-anotaciones`| flag       | _(desactivado)_                             | Oculta los valores numéricos dentro de cada celda del mapa.              |
 | `--salida SALIDA`  | opcional   | _(muestra en pantalla)_                     | Guarda el gráfico en el archivo indicado.                                |
 | `--formato`        | opcional   | se infiere de `--salida` o `show`           | `png`, `pdf`, `svg`, `jpg`, `pkl` (reabrir con `--mostrar`) o `show`.    |
@@ -169,14 +170,15 @@ python mapa_calor.py --help
 
 ## Paletas de colores disponibles
 
-| Paleta      | Descripción                                      |
-|-------------|--------------------------------------------------|
-| `YlOrRd`    | Amarillo → Naranja → Rojo _(por defecto)_        |
-| `Blues`     | Degradado de azules                              |
-| `viridis`   | Morado → Verde → Amarillo (accesible para daltonismo) |
-| `coolwarm`  | Azul (frío) → Rojo (caliente)                    |
-| `RdYlGn`    | Rojo → Amarillo → Verde (tipo semáforo)          |
-| `magma`     | Negro → Violeta → Amarillo                       |
+| Paleta        | Descripción                                      |
+|---------------|--------------------------------------------------|
+| `beige_vino`  | Beige → camel → vino / borgoña _(por defecto)_   |
+| `YlOrRd`      | Amarillo → Naranja → Rojo                        |
+| `Blues`       | Degradado de azules                              |
+| `viridis`     | Morado → Verde → Amarillo (accesible para daltonismo) |
+| `coolwarm`    | Azul (frío) → Rojo (caliente)                    |
+| `RdYlGn`      | Rojo → Amarillo → Verde (tipo semáforo)          |
+| `magma`       | Negro → Violeta → Amarillo                       |
 
 Para una lista completa de paletas disponibles consulta la [documentación de Matplotlib](https://matplotlib.org/stable/gallery/color/colormap_reference.html).
 
@@ -204,3 +206,4 @@ El archivo Excel debe tener la siguiente estructura:
 - `--formato pkl` guarda la figura de Matplotlib. Se reabre con `--mostrar` (misma versión de Matplotlib recomendada).
 - Los formatos de imagen soportados: `.png`, `.jpg`, `.pdf`, `.svg`.
 - Cualquier valor no numérico en el Excel se convierte a `NaN` y se muestra como celda vacía en el mapa.
+- Las cifras en celdas y en la barra de color usan coma de miles: `1,234` / `1,234,567.00`.
