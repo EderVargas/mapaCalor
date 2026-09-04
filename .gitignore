@@ -1,0 +1,24 @@
+# Entorno y herramientas locales
+.venv/
+.cursor/
+graphify-out/
+__pycache__/
+*.pyc
+*.pyo
+
+# Datos de entrada (Excel). No van al repo.
+input/
+
+# Mapas generados. No van al repo.
+output/
+
+# Revisión local: zips, copias y pruebas. Tú decides qué se queda.
+tmp/
+
+# Copia derivada; si queda en la raíz (archivo abierto) tampoco va al repo.
+/README.pdf
+
+# SO
+Thumbs.db
+Desktop.ini
+.DS_Store
